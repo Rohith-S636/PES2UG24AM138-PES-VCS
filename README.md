@@ -44,10 +44,10 @@ The test program verifies:
 - Integrity checking (detects corrupted objects)
 
 **📸 Screenshot 1A:** Output of `./test_objects` showing all tests passing.
-<br>![Screenshot 1A: Output of test_objects](/screenshot/1A.png)
+<br>![Screenshot 1A: Output of test_objects](./Screenshots/1A.png)
 
 **📸 Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
-<br>![Screenshot 1B: Object Store Sharding](/screenshot/1B.png)
+<br>![Screenshot 1B: Object Store Sharding](./Screenshots/1B.png)
 
 ---
 
@@ -78,10 +78,10 @@ The test program verifies:
 - Deterministic serialization (same entries in any order → identical output)
 
 **📸 Screenshot 2A:** Output of `./test_tree` showing all tests passing.
-<br>![Screenshot 2A: Output of test_tree](./screenshot_2A.png)
+<br>![Screenshot 2A: Output of test_tree](./Screenshots/2A.png)
 
 **📸 Screenshot 2B:** Pick a tree object from `find .pes/objects -type f` and run `xxd .pes/objects/XX/YYY... | head -20` to show the raw binary format.
-<br>![Screenshot 2B: XXD output of Tree Object](./screenshot_2B.png)
+<br>![Screenshot 2B: XXD output of Tree Object](./Screenshots/2B.png)
 
 ---
 
@@ -138,10 +138,10 @@ cat .pes/index    # Human-readable text format
 ```
 
 **📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
-<br>![Screenshot 3A: PES Init/Add/Status Sequences](./screenshot_3A.png)
+<br>![Screenshot 3A: PES Init/Add/Status Sequences](./Screenshots/3A.png)
 
 **📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
-<br>![Screenshot 3B: Cat internal text Index format](./screenshot_3B.png)
+<br>![Screenshot 3B: Cat internal text Index format](./Screenshots/3B.png)
 
 ---
 
@@ -191,16 +191,19 @@ make test-integration
 ```
 
 **📸 Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
-<br>![Screenshot 4A: Commit history outputs](./screenshot_4A.png)
+<br>![Screenshot 4A: Commit history outputs](./Screenshots/4A.png)
 
 **📸 Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
-<br>![Screenshot 4B: Final Objects Directory Find/Sort Sequences](./screenshot_4B.png)
+<br>![Screenshot 4B: Final Objects Directory Find/Sort Sequences](./Screenshots/4B.png)
 
 **📸 Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
-<br>![Screenshot 4C: Physical HEAD linking chains](./screenshot_4C.png)
+<br>![Screenshot 4C: Physical HEAD linking chains](./Screenshots/4C.png)
 
 **📸 Final Integration Test:** Output of full end-to-end testing sequence.
-<br>![Screenshot Final: Test Integration Run](./screenshot_final.png)
+<br>![Screenshot Final: Test Integration Run](./Screenshots/5A.png)
+<br>![Screenshot Final: Test Integration Run](./Screenshots/5B.png)
+<br>![Screenshot Final: Test Integration Run](./Screenshots/5C.png)
+
 
 ---
 
