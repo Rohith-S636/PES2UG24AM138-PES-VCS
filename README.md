@@ -44,10 +44,10 @@ The test program verifies:
 - Integrity checking (detects corrupted objects)
 
 **📸 Screenshot 1A:** Output of `./test_objects` showing all tests passing.
-<br>![Screenshot 1A: Output of test_objects](./screenshot_1A.png)
+<br>![Screenshot 1A: Output of test_objects](/screenshot/1A.png)
 
 **📸 Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
-<br>![Screenshot 1B: Object Store Sharding](./screenshot_1B.png)
+<br>![Screenshot 1B: Object Store Sharding](/screenshot/1B.png)
 
 ---
 
