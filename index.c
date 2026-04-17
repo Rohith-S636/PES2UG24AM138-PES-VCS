@@ -135,10 +135,50 @@ int index_status(const Index *index) {
 //
 // Returns 0 on success, -1 on error.
 int index_load(Index *index) {
-    // TODO: Implement index loading
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    index->count = 0;
+    FILE *f = fopen(INDEX_FILE, "r");
+    if (!f) return 0; // Successfully loaded an empty index
+    
+    char line[1024];
+    while (fgets(line, sizeof(line), f) && index->count < MAX_INDEX_ENTRIES) {
+        IndexEntry *entry = &index->entries[index->count];
+        char hex[65];
+        unsigned int mode;
+#ifdef _WIN32
+        unsigned long long mtime;
+#else
+        unsigned long long mtime;
+#endif
+        unsigned int size;
+        
+        // Simple and robust parser for minGW and linux.
+        int parsed = sscanf(line, "%o %64s %llu %u %511[^\n]", 
+                   &mode, hex, &mtime, &size, entry->path);
+        
+        // Fallback for old minGW (MSVCRT) which does not understand %llu
+        if (parsed != 5) {
+            unsigned long tmp_mtime;
+            if (sscanf(line, "%o %64s %lu %u %511[^\n]", 
+                       &mode, hex, &tmp_mtime, &size, entry->path) == 5) {
+                mtime = tmp_mtime;
+                parsed = 5;
+            } else if (sscanf(line, "%o %64s %I64u %u %511[^\n]", 
+                       &mode, hex, &mtime, &size, entry->path) == 5) {
+                parsed = 5;
+            }
+        }
+        
+        if (parsed == 5) {
+            entry->mode = mode;
+            hex_to_hash(hex, &entry->hash);
+            entry->mtime_sec = mtime;
+            entry->size = size;
+            index->count++;
+        }
+    }
+    
+    fclose(f);
+    return 0;
 }
 
 // Save the index to .pes/index atomically.
@@ -151,11 +191,47 @@ int index_load(Index *index) {
 //   - rename                           : atomically moving the temp file over the old index
 //
 // Returns 0 on success, -1 on error.
+static int compare_index_entries(const void *a, const void *b) {
+    return strcmp(((const IndexEntry *)a)->path, ((const IndexEntry *)b)->path);
+}
+
 int index_save(const Index *index) {
-    // TODO: Implement atomic index saving
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    Index sorted_index = *index;
+    qsort(sorted_index.entries, sorted_index.count, sizeof(IndexEntry), compare_index_entries);
+    
+    char temp_path[512];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", INDEX_FILE);
+    
+    FILE *f = fopen(temp_path, "w");
+    if (!f) return -1;
+    
+    for (int i = 0; i < sorted_index.count; i++) {
+        const IndexEntry *entry = &sorted_index.entries[i];
+        char hex[65];
+        hash_to_hex(&entry->hash, hex);
+#ifdef _WIN32
+        fprintf(f, "%06o %s %I64u %u %s\n", 
+                entry->mode, hex, 
+                (unsigned long long)entry->mtime_sec, 
+                entry->size, entry->path);
+#else
+        fprintf(f, "%06o %s %llu %u %s\n", 
+                entry->mode, hex, 
+                (unsigned long long)entry->mtime_sec, 
+                entry->size, entry->path);
+#endif
+    }
+    
+    fflush(f);
+    fsync(fileno(f));
+    fclose(f);
+    
+    if (rename(temp_path, INDEX_FILE) != 0) {
+        unlink(temp_path);
+        return -1;
+    }
+    
+    return 0;
 }
 
 // Stage a file for the next commit.
@@ -167,9 +243,56 @@ int index_save(const Index *index) {
 //   - index_find                       : checking if the file is already staged
 //
 // Returns 0 on success, -1 on error.
+extern int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out);
+
 int index_add(Index *index, const char *path) {
-    // TODO: Implement file staging
-    // (See Lab Appendix for logical steps)
-    (void)index; (void)path;
-    return -1;
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return -1;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+        return -1; // Directory adding not implemented in this minimal VCS
+    }
+    
+    FILE *f = fopen(path, "r");
+    if (!f) return -1;
+    
+    size_t size = st.st_size;
+    void *data = NULL;
+    if (size > 0) {
+        data = malloc(size);
+        if (!data) {
+            fclose(f);
+            return -1;
+        }
+        if (fread(data, 1, size, f) != size) {
+            free(data);
+            fclose(f);
+            return -1;
+        }
+    }
+    fclose(f);
+    
+    ObjectID hash;
+    if (object_write(OBJ_BLOB, data ? data : "", size, &hash) != 0) {
+        free(data);
+        return -1;
+    }
+    free(data);
+    
+    IndexEntry *entry = index_find(index, path);
+    if (!entry) {
+        if (index->count >= MAX_INDEX_ENTRIES) return -1;
+        entry = &index->entries[index->count++];
+        strncpy(entry->path, path, sizeof(entry->path)-1);
+        entry->path[sizeof(entry->path)-1] = '\0';
+    }
+    
+    entry->mode = (st.st_mode & S_IXUSR) ? 0100755 : 0100644;
+    entry->hash = hash;
+    entry->mtime_sec = st.st_mtime;
+    entry->size = size;
+    
+    return index_save(index);
 }
